@@ -5,6 +5,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include <iostream>
 
 // Used to describe a triangular surface:
 class Triangle
@@ -28,6 +29,8 @@ public:
 		glm::vec3 e2 = v2-v0;
 		normal = glm::normalize( glm::cross( e2, e1 ) );
 	}
+
+
 };
 
 // Loads the Cornell Box. It is scaled to fill the volume:
