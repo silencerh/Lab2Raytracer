@@ -3,6 +3,8 @@
 #include <SDL.h>
 #include "SDLauxiliary.h"
 #include "TestModel.h"
+#include <math.h>
+#include <algorithm>
 
 
 using namespace std;
@@ -12,8 +14,8 @@ using glm::mat3;
 // ----------------------------------------------------------------------------
 // GLOBAL VARIABLES
 
-const int SCREEN_WIDTH = 200;
-const int SCREEN_HEIGHT = 200;
+const int SCREEN_WIDTH = 100;
+const int SCREEN_HEIGHT = 100;
 SDL_Surface* screen;
 int t;
 vector<Triangle> triangles;
@@ -26,7 +28,8 @@ struct Intersection
 Intersection closestIntersection;
 vec3 cameraPos(0, 0, -2);
 float yaw=0.0;
-
+vec3 lightPos(0,-0.5,-0.7);
+vec3 lightColor = 14.f * vec3(1,1,1);
 // ----------------------------------------------------------------------------
 // FUNCTIONS
 
@@ -38,7 +41,7 @@ bool ClosestIntersection(
 	const vector<Triangle>& triangles,
 	Intersection& closestIntersection
 	);
-
+vec3 DirectLight(const Intersection& i);
 void PrintTriangle(Triangle triangle);
 
 
@@ -85,6 +88,38 @@ void Update()
 		// Move camera to the right
 		yaw -= 0.1;
 	}
+	if (keystate[SDLK_w])
+	{
+		// Move lightsource forward
+
+		lightPos.z += 0.1;
+	}
+	if (keystate[SDLK_s])
+	{
+		// Move lightsource backward
+		lightPos.z -= 0.1;
+	}
+	if (keystate[SDLK_a])
+	{
+		// Move lightsource left
+		lightPos.x -= 0.1;
+	}
+	if (keystate[SDLK_d])
+	{
+		// Move lightsource right
+		lightPos.x += 0.1;
+	}
+	if (keystate[SDLK_q])
+	{
+		// Move lightsource up
+		lightPos.y -= 0.1;
+	}
+	if (keystate[SDLK_e])
+	{
+		// Move lightsource down
+		lightPos.y += 0.1;
+	}
+
 }
 
 void Draw()
@@ -107,7 +142,8 @@ void Draw()
 			dir = R*dir;
 			if (ClosestIntersection(cameraPos, dir, triangles, closestIntersection))
 			{
-				color = triangles[closestIntersection.triangleIndex].color;
+				vec3 ro = DirectLight(closestIntersection);
+					color = ro*triangles[closestIntersection.triangleIndex].color;
 					PutPixelSDL(screen, x, y, color);
 			}
 
@@ -150,4 +186,13 @@ bool ClosestIntersection(vec3 start, vec3 dir, const vector<Triangle>& triangles
 		}
 	}
 	return flag;
+}
+
+vec3 DirectLight(const Intersection& i)
+{
+	const double pi = 3.1415926535897;
+	vec3 r = lightPos - i.position;
+	float area = 4 * pi*pow(glm::length(r),2);
+	float project_surface = fmax(glm::dot(r, triangles[i.triangleIndex].normal), 0);
+	return lightColor*project_surface / area;
 }
