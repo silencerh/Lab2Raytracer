@@ -12,8 +12,8 @@ using glm::mat3;
 // ----------------------------------------------------------------------------
 // GLOBAL VARIABLES
 
-const int SCREEN_WIDTH = 500;
-const int SCREEN_HEIGHT = 500;
+const int SCREEN_WIDTH = 200;
+const int SCREEN_HEIGHT = 200;
 SDL_Surface* screen;
 int t;
 vector<Triangle> triangles;
@@ -24,6 +24,9 @@ struct Intersection
 	int triangleIndex;
 };
 Intersection closestIntersection;
+vec3 cameraPos(0, 0, -2);
+float yaw=0.0;
+
 // ----------------------------------------------------------------------------
 // FUNCTIONS
 
@@ -61,6 +64,27 @@ void Update()
 	float dt = float(t2-t);
 	t = t2;
 	cout << "Render time: " << dt << " ms." << endl;
+	Uint8* keystate = SDL_GetKeyState(0);
+	if (keystate[SDLK_UP])
+	{
+		// Move camera forward
+		cameraPos.z += 0.1;
+	}
+	if (keystate[SDLK_DOWN])
+	{
+		// Move camera backward
+		cameraPos.z -= 0.1;
+	}
+	if (keystate[SDLK_LEFT])
+	{
+		// Move camera to the left
+		yaw += 0.1;
+	}
+	if (keystate[SDLK_RIGHT])
+	{
+		// Move camera to the right
+		yaw -= 0.1;
+	}
 }
 
 void Draw()
@@ -71,14 +95,16 @@ void Draw()
 	LoadTestModel(triangles);
 
 	vec3 dir,color;
+	mat3 R(cos(yaw),0,sin(yaw),0,1,0,-sin(yaw),0,cos(yaw));
+
 	float f = SCREEN_HEIGHT / 2;
-	vec3 cameraPos(0,0,-2);
+	
 	for (int y = 0; y < SCREEN_HEIGHT; y++)
 	{
 		for (int x = 0; x < SCREEN_WIDTH; ++x)
 		{
 			vec3 dir(x - SCREEN_HEIGHT / 2, y - SCREEN_WIDTH/2, f);
-	
+			dir = R*dir;
 			if (ClosestIntersection(cameraPos, dir, triangles, closestIntersection))
 			{
 				color = triangles[closestIntersection.triangleIndex].color;
