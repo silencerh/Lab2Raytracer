@@ -14,8 +14,8 @@ using glm::mat3;
 // ----------------------------------------------------------------------------
 // GLOBAL VARIABLES
 
-const int SCREEN_WIDTH = 100;
-const int SCREEN_HEIGHT = 100;
+const int SCREEN_WIDTH = 500;
+const int SCREEN_HEIGHT = 500;
 SDL_Surface* screen;
 int t;
 vector<Triangle> triangles;
@@ -30,6 +30,7 @@ vec3 cameraPos(0, 0, -2);
 float yaw=0.0;
 vec3 lightPos(0,-0.5,-0.7);
 vec3 lightColor = 14.f * vec3(1,1,1);
+vec3 indirectLight = 0.5f*vec3(1, 1, 1);
 // ----------------------------------------------------------------------------
 // FUNCTIONS
 
@@ -142,7 +143,8 @@ void Draw()
 			dir = R*dir;
 			if (ClosestIntersection(cameraPos, dir, triangles, closestIntersection))
 			{
-				vec3 ro = DirectLight(closestIntersection);
+				vec3 ro_direct = DirectLight(closestIntersection);
+				vec3 ro = ro_direct + indirectLight;
 					color = ro*triangles[closestIntersection.triangleIndex].color;
 					PutPixelSDL(screen, x, y, color);
 			}
@@ -191,8 +193,17 @@ bool ClosestIntersection(vec3 start, vec3 dir, const vector<Triangle>& triangles
 vec3 DirectLight(const Intersection& i)
 {
 	const double pi = 3.1415926535897;
+	vec3 directLight(0,0,0);
 	vec3 r = lightPos - i.position;
-	float area = 4 * pi*pow(glm::length(r),2);
-	float project_surface = fmax(glm::dot(r, triangles[i.triangleIndex].normal), 0);
-	return lightColor*project_surface / area;
+	if (ClosestIntersection(i.position, r, triangles, closestIntersection)&&
+		closestIntersection.distance >= glm::length(r))
+	{
+			float area = 4 * pi*pow(glm::length(r), 2);
+			float project_surface = fmax(glm::dot(r, triangles[i.triangleIndex].normal), 0);
+			directLight = lightColor*project_surface / area;
+	}
+	
+	
+
+	return directLight;
 }
