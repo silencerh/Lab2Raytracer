@@ -1,6 +1,6 @@
 #include <iostream>
 #include <glm/glm.hpp>
-#include <SDL.h>
+#include "SDL.h"
 #include "SDLauxiliary.h"
 #include "TestModel.h"
 #include <math.h>
@@ -27,10 +27,12 @@ struct Intersection
 };
 Intersection closestIntersection;
 vec3 cameraPos(0, 0, -2);
-float yaw=0.0;
-vec3 lightPos(0,-0.5,-0.7);
-vec3 lightColor = 14.f * vec3(1,1,1);
-vec3 indirectLight = 0.5f*vec3(1, 1, 1);
+float yaw=0.0f*3.1415926/180;
+vec3 lightPos(0,-0.5,-0.8);
+vec3 lightColor = 6.1f * vec3(1,1,1);
+vec3 indirectLight = vec3(0,0,0); //0.5f*vec3(1, 1, 1);
+vec3 black(0, 0, 0);
+vec3 white(1, 1, 1);
 // ----------------------------------------------------------------------------
 // FUNCTIONS
 
@@ -43,7 +45,6 @@ bool ClosestIntersection(
 	Intersection& closestIntersection
 	);
 vec3 DirectLight(const Intersection& i);
-void PrintTriangle(Triangle triangle);
 
 
 int main( int argc, char* argv[] )
@@ -72,53 +73,53 @@ void Update()
 	if (keystate[SDLK_UP])
 	{
 		// Move camera forward
-		cameraPos.z += 0.1;
+		cameraPos.z += 0.1f;
 	}
 	if (keystate[SDLK_DOWN])
 	{
 		// Move camera backward
-		cameraPos.z -= 0.1;
+		cameraPos.z -= 0.1f;
 	}
 	if (keystate[SDLK_LEFT])
 	{
-		// Move camera to the left
-		yaw += 0.1;
+		// Rotate the camera along the y axis
+		yaw += 0.1f;
 	}
 	if (keystate[SDLK_RIGHT])
 	{
-		// Move camera to the right
-		yaw -= 0.1;
+		// Rotate the camera along the y axis
+		yaw -= 0.1f;
 	}
 	if (keystate[SDLK_w])
 	{
 		// Move lightsource forward
 
-		lightPos.z += 0.1;
+		lightPos.z += 0.1f;
 	}
 	if (keystate[SDLK_s])
 	{
 		// Move lightsource backward
-		lightPos.z -= 0.1;
+		lightPos.z -= 0.1f;
 	}
 	if (keystate[SDLK_a])
 	{
 		// Move lightsource left
-		lightPos.x -= 0.1;
+		lightPos.x -= 0.1f;
 	}
 	if (keystate[SDLK_d])
 	{
 		// Move lightsource right
-		lightPos.x += 0.1;
+		lightPos.x += 0.1f;
 	}
 	if (keystate[SDLK_q])
 	{
 		// Move lightsource up
-		lightPos.y -= 0.1;
+		lightPos.y -= 0.1f;
 	}
 	if (keystate[SDLK_e])
 	{
 		// Move lightsource down
-		lightPos.y += 0.1;
+		lightPos.y += 0.1f;
 	}
 
 }
@@ -131,6 +132,7 @@ void Draw()
 	LoadTestModel(triangles);
 
 	vec3 dir,color;
+
 	mat3 R(cos(yaw),0,sin(yaw),0,1,0,-sin(yaw),0,cos(yaw));
 
 	float f = SCREEN_HEIGHT / 2;
@@ -140,14 +142,16 @@ void Draw()
 		for (int x = 0; x < SCREEN_WIDTH; ++x)
 		{
 			vec3 dir(x - SCREEN_HEIGHT / 2, y - SCREEN_WIDTH/2, f);
+			//dir = glm::normalize(dir);
 			dir = R*dir;
 			if (ClosestIntersection(cameraPos, dir, triangles, closestIntersection))
 			{
-				vec3 ro_direct = DirectLight(closestIntersection);
-				vec3 ro = ro_direct + indirectLight;
-					color = ro*triangles[closestIntersection.triangleIndex].color;
-					PutPixelSDL(screen, x, y, color);
+				vec3 directLight = DirectLight(closestIntersection);
+				vec3 ro = directLight + indirectLight;
+				color = ro*triangles[closestIntersection.triangleIndex].color;
+					PutPixelSDL(screen, x, y, directLight);
 			}
+			else{ PutPixelSDL(screen, x, y, black); }
 
 		}
 	}
@@ -165,7 +169,7 @@ bool ClosestIntersection(vec3 start, vec3 dir, const vector<Triangle>& triangles
 	float distance_temp;
 	bool flag=false;
 	closestIntersection.distance = std::numeric_limits<float>::max();
-	for(int i=0;i<triangles.size();++i)
+	for( int i = 0;i < triangles.size(); ++i )
 	{
 		e1 = triangles[i].v1-triangles[i].v0;
 		e2 = triangles[i].v2-triangles[i].v0;
@@ -175,16 +179,19 @@ bool ClosestIntersection(vec3 start, vec3 dir, const vector<Triangle>& triangles
 		e = glm::inverse(A)*b;
 		result = e.y*e1 + e.z*e2+triangles[i].v0;
 		
-		if (e.y>=0 && e.z >= 0 && (e.y+e.z <= 1))
+		if ((e.x >= 0.0f)&&(e.y >= 0.0f) && (e.z >= 0.0f) && (e.y + e.z <= 1.0f))
 		{
-			//the distance might be negative, no consideration here
-			flag = true;
-			distance_temp = glm::length(result-start);
-			if (distance_temp < closestIntersection.distance){
-				closestIntersection.distance = distance_temp;
-				closestIntersection.position = e.y*e1+e.z*e2;
-				closestIntersection.triangleIndex = i;
-			}
+			
+			
+				flag = true;
+				distance_temp = glm::length(result - start);
+				if (distance_temp < closestIntersection.distance)
+				{
+					closestIntersection.distance = distance_temp;
+					closestIntersection.position = result;
+					closestIntersection.triangleIndex = i;
+				}
+			
 		}
 	}
 	return flag;
@@ -192,18 +199,16 @@ bool ClosestIntersection(vec3 start, vec3 dir, const vector<Triangle>& triangles
 
 vec3 DirectLight(const Intersection& i)
 {
-	const double pi = 3.1415926535897;
-	vec3 directLight(0,0,0);
-	vec3 r = lightPos - i.position;
-	if (ClosestIntersection(i.position, r, triangles, closestIntersection)&&
-		closestIntersection.distance >= glm::length(r))
+	float pi = 3.1415926f;
+	vec3 directLight(0, 0, 0);
+	Intersection shadowIntersection = i;
+	vec3 direction = lightPos - shadowIntersection.position;
+	ClosestIntersection(shadowIntersection.position, direction, triangles, shadowIntersection);
+	if (shadowIntersection.distance < glm::length(direction))
 	{
-			float area = 4 * pi*pow(glm::length(r), 2);
-			float project_surface = fmax(glm::dot(r, triangles[i.triangleIndex].normal), 0);
-			directLight = lightColor*project_surface / area;
+		float area =  4 * pi*glm::length(direction)*glm::length(direction);
+		float project_surface =(float) fmax(glm::dot(direction, triangles[shadowIntersection.triangleIndex].normal), 0);
+		directLight = lightColor*project_surface / area;
 	}
-	
-	
-
 	return directLight;
 }
