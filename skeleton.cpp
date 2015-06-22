@@ -142,7 +142,7 @@ void Draw()
 		for (int x = 0; x < SCREEN_WIDTH; ++x)
 		{
 			vec3 dir(x - SCREEN_HEIGHT / 2, y - SCREEN_WIDTH/2, f);
-			//dir = glm::normalize(dir);
+			
 			dir = R*dir;
 			if (ClosestIntersection(cameraPos, dir, triangles, closestIntersection))
 			{
@@ -169,7 +169,8 @@ bool ClosestIntersection(vec3 start, vec3 dir, const vector<Triangle>& triangles
 	float distance_temp;
 	bool flag=false;
 	closestIntersection.distance = std::numeric_limits<float>::max();
-	for( int i = 0;i < triangles.size(); ++i )
+	int size = triangles.size();
+	for( int i = 0;i < size; ++i )
 	{
 		e1 = triangles[i].v1-triangles[i].v0;
 		e2 = triangles[i].v2-triangles[i].v0;
@@ -180,9 +181,7 @@ bool ClosestIntersection(vec3 start, vec3 dir, const vector<Triangle>& triangles
 		result = e.y*e1 + e.z*e2+triangles[i].v0;
 		
 		if ((e.x >= 0.0f)&&(e.y >= 0.0f) && (e.z >= 0.0f) && (e.y + e.z <= 1.0f))
-		{
-			
-			
+		{		
 				flag = true;
 				distance_temp = glm::length(result - start);
 				if (distance_temp < closestIntersection.distance)
@@ -190,8 +189,7 @@ bool ClosestIntersection(vec3 start, vec3 dir, const vector<Triangle>& triangles
 					closestIntersection.distance = distance_temp;
 					closestIntersection.position = result;
 					closestIntersection.triangleIndex = i;
-				}
-			
+				}			
 		}
 	}
 	return flag;
@@ -201,13 +199,13 @@ vec3 DirectLight(const Intersection& i)
 {
 	float pi = 3.1415926f;
 	vec3 directLight(0, 0, 0);
-	Intersection shadowIntersection = i;
-	vec3 direction = lightPos - shadowIntersection.position;
-	ClosestIntersection(shadowIntersection.position, direction, triangles, shadowIntersection);
-	if (shadowIntersection.distance < glm::length(direction))
+	Intersection cIntersection;
+	vec3 direction = lightPos - i.position;
+	ClosestIntersection(i.position, direction, triangles, cIntersection);
+	if (cIntersection.distance >= glm::length(direction))
 	{
 		float area =  4 * pi*glm::length(direction)*glm::length(direction);
-		float project_surface =(float) fmax(glm::dot(direction, triangles[shadowIntersection.triangleIndex].normal), 0);
+		float project_surface =(float) fmax(glm::dot(direction, triangles[cIntersection.triangleIndex].normal), 0);
 		directLight = lightColor*project_surface / area;
 	}
 	return directLight;
