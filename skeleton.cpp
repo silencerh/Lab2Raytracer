@@ -30,7 +30,7 @@ vec3 cameraPos(0, 0, -2);
 float yaw=0.0f*3.1415926/180;
 vec3 lightPos(0,-0.5,-0.8);
 vec3 lightColor = 6.1f * vec3(1,1,1);
-vec3 indirectLight = vec3(0,0,0); //0.5f*vec3(1, 1, 1);
+vec3 indirectLight = 0.5f*vec3(1, 1, 1);
 vec3 black(0, 0, 0);
 vec3 white(1, 1, 1);
 // ----------------------------------------------------------------------------
@@ -147,7 +147,7 @@ void Draw()
 			if (ClosestIntersection(cameraPos, dir, triangles, closestIntersection))
 			{
 				vec3 directLight = DirectLight(closestIntersection);
-				vec3 ro = directLight + indirectLight;
+				vec3 ro = indirectLight; //+	directLight;
 				color = ro*triangles[closestIntersection.triangleIndex].color;
 					PutPixelSDL(screen, x, y, directLight);
 			}
@@ -205,8 +205,8 @@ vec3 DirectLight(const Intersection& i)
 	if (cIntersection.distance >= glm::length(direction))
 	{
 		float area =  4 * pi*glm::length(direction)*glm::length(direction);
-		float project_surface =(float) fmax(glm::dot(direction, triangles[cIntersection.triangleIndex].normal), 0);
-		directLight = lightColor*project_surface / area;
+		float project_surface =(float) fmax(glm::dot(direction, triangles[i.triangleIndex].normal), 0);
+		directLight =  lightColor*project_surface / area;
 	}
 	return directLight;
 }
